@@ -76,8 +76,9 @@ npm start
 
 ### ככה זה נראה באמצעות הכלי שכתבתי 👍
 
-![resized_screenshot_1](https://github.com/user-attachments/assets/6831303e-c62a-4d1c-9813-a64e495d4c80)
-![resized_screenshot_3](https://github.com/user-attachments/assets/65db0154-e268-4866-86ab-edf1b8fdf3ae)
-![resized_screenshot_2](https://github.com/user-attachments/assets/c2bf4372-309e-4132-bac3-736817540381)
+![1](https://github.com/user-attachments/assets/dcb665f8-0ae3-4e1d-8dd4-5d2229e795f1)
+![2](https://github.com/user-attachments/assets/27e0f0b4-b164-44d3-982d-c994773e06f8)
+![3](https://github.com/user-attachments/assets/dcb51ccf-83a8-4cc0-9eea-a9bb5431e0c5)
 ### ככה זה היה נראה עד עכשיו 🙈
-![resized_screenshot_4](https://github.com/user-attachments/assets/37c15dc1-01ab-4207-ac2c-3325888b2468)
+![4](https://github.com/user-attachments/assets/c5523973-cd67-4ff8-80a3-bcd972208077)
+
