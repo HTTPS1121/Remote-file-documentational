@@ -1,16 +1,18 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import os
 from pathlib import Path
 import mimetypes
 from mutagen import File as MutagenFile
 from dotenv import load_dotenv
+import ssl
 
 load_dotenv()
 BASE_PATH = os.getenv('BASE_PATH')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
 app = Flask(__name__)
+app.static_folder = 'static'
 CORS(app, 
      resources={r"/*": {
         "origins": [FRONTEND_URL, "http://localhost:3000"],
@@ -169,5 +171,17 @@ def list_directories():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+@app.route('/Browser/', defaults={'path': ''})
+@app.route('/Browser/<path:path>')
+def serve_browser(path):
+    if path and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    return send_from_directory(app.static_folder, 'index.html')
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(
+        os.getenv('SSL_CERT_PATH'),
+        os.getenv('SSL_KEY_PATH')
+    )
+    app.run(host='0.0.0.0', port=443, ssl_context=context)
