@@ -4,10 +4,23 @@ import FileExplorer from './components/FileExplorer';
 import FilterPanel from './components/FilterPanel';
 import DocumentationView from './components/DocumentationView';
 import TableSettings from './components/TableSettings';
+import Login from './components/Login';
+import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const ROOT_FOLDER = "C:\\";
+
+// הגדרת אינטרספטור לטיפול בשגיאות 401
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      setIsAuthenticated(false);
+    }
+    return Promise.reject(error);
+  }
+);
 
 function App() {
   const defaultPath = process.env.REACT_APP_DEFAULT_PATH || 'C:\\Users\\Administrator\\Downloads\\Telegram_Desktop';
@@ -40,6 +53,7 @@ function App() {
       borderRadius: 8
     };
   });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     loadFiles();
@@ -81,26 +95,28 @@ function App() {
     document.documentElement.style.setProperty('--border-radius', `${tableSettings.borderRadius}px`);
   }, [tableSettings]);
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await axios.get('/check-auth');
+        setIsAuthenticated(response.data.authenticated);
+      } catch (err) {
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
   const loadFiles = async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const response = await fetch(`${API_URL}/list-directory`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          path: currentPath,
-          fileTypes: selectedTypes 
-        })
-      });
-      
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
-      setFiles(data.files);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      const response = await axios.post('/list-files', { path: currentPath });
+      setFiles(response.data.files);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        setIsAuthenticated(false);
+      } else {
+        console.error('Error loading files:', error);
+      }
     }
   };
 
@@ -337,6 +353,10 @@ function App() {
   const hasVideoFiles = (files) => {
     return files.some(file => file.type?.startsWith('video/'));
   };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="app">
