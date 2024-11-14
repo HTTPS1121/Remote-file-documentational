@@ -4,3 +4,4 @@ Flask-CORS==3.0.10
 Mutagen==1.45.1
 pathlib==1.0.1
 python-dotenv==1.0.0
+Flask-Login==0.6.3
