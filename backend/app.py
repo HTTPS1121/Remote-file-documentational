@@ -6,6 +6,11 @@ import mimetypes
 from mutagen import File as MutagenFile
 from dotenv import load_dotenv
 import ssl
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import check_password_hash, generate_password_hash
+from config import Config
+from functools import wraps
+from flask import redirect, url_for
 
 load_dotenv()
 BASE_PATH = os.getenv('BASE_PATH')
@@ -18,7 +23,8 @@ CORS(app,
         "origins": [FRONTEND_URL, "http://localhost:3000"],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"],
-        "supports_credentials": True
+        "supports_credentials": True,
+        "expose_headers": ["Set-Cookie"]
      }})
 
      # הוסף את זה לפני כל ראוט
@@ -91,7 +97,16 @@ def normalize_extension(ext):
             return main_ext
     return ext
 
+def auth_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/list-directory', methods=['POST'])
+@login_required
 def list_directory():
     requested_path = request.json.get('path', '')
     file_types = request.json.get('fileTypes', [])
@@ -151,6 +166,7 @@ def list_directory():
         return jsonify({'error': str(e)}), 400
 
 @app.route('/list-directories', methods=['POST'])
+@auth_required
 def list_directories():
     requested_path = request.json.get('path', '')
     
@@ -177,6 +193,45 @@ def serve_browser(path):
     if path and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
     return send_from_directory(app.static_folder, 'index.html')
+
+app.config.from_object(Config)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+# משתמש פשוט בלי DB
+class User(UserMixin):
+    def __init__(self, username):
+        self.id = username
+        self.username = username
+
+@login_manager.user_loader
+def load_user(username):
+    if username == app.config['ADMIN_USERNAME']:
+        return User(username)
+    return None
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    if (data['username'] == app.config['ADMIN_USERNAME'] and 
+        data['password'] == app.config['ADMIN_PASSWORD']):
+        user = User(data['username'])
+        login_user(user)
+        return jsonify({'success': True})
+    return jsonify({'error': 'Invalid credentials'}), 401
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return jsonify({'success': True})
+
+@app.route('/check-auth')
+def check_auth():
+    if current_user.is_authenticated:
+        return jsonify({'authenticated': True})
+    return jsonify({'authenticated': False})
 
 if __name__ == '__main__':
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
